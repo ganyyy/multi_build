@@ -19,6 +19,7 @@ ARG BUILD_DIR="/build"
 # 这个目录下必须有 main.go 文件
 # 例如：A/SA/main.go
 ARG SERVICE_DIR
+ARG NEED_DATA=false
 
 ARG GO_BUILD_FLAGS='-trimpath -ldflags=-s -ldflags=-w -race'
 
@@ -42,10 +43,18 @@ RUN --mount=type=cache,target=${GO_MOD_CACHE},id=${CACHE_GO_MOD_ID} \
     cd ${SERVICE_DIR} && \
     GOOS=linux GOARCH=amd64 go build ${GO_BUILD_FLAGS} -o /out/cmd main.go
 
+RUN --mount=type=bind,source=.,target=${BUILD_DIR}/A \
+    --mount=type=bind,from=repo_b,target=${BUILD_DIR}/B \
+    mkdir -p /out/data && \
+    if [ "${NEED_DATA}" = "true" ]; then cp -a ${SERVICE_DIR}/main.go /out/data/; fi
+        
 
-FROM --platform=${BUILDPLATFORM:-linux/amd64} gcr.io/distroless/cc-debian12:nonroot as runner
+FROM --platform=${BUILDPLATFORM:-linux/amd64} gcr.io/distroless/cc-debian12:nonroot AS runner
 
-COPY --from=builder /out/cmd /app/cmd
+WORKDIR /app
+
+COPY --from=builder /out/cmd cmd
+COPY --from=builder /out/data data
 EXPOSE 8080
 
 CMD ["/app/cmd"]
