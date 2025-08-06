@@ -2,6 +2,19 @@
 REGISTRY := local
 
 
+SERVICE_TARGET      := A B C
+SERVICE_TARGET_SUB  := $(addsuffix /XXX,$(SERVICE_TARGET))
+
+.PHONY: $(SERVICE_TARGET) $(SERVICE_TARGET_SUB)
+
+# 原始目标
+$(SERVICE_TARGET):
+	@echo ">> build $@"
+
+# 二级目标 A/XXX 依赖 A
+$(SERVICE_TARGET_SUB): %/XXX :
+	@echo "P=$*"
+	@echo "S=$(notdir $@)"
 
 SERVICES := A/SA \
 			A/SB \
